@@ -1,6 +1,4 @@
 package com.example.telegrambot.service;
-
-
 import com.example.telegrambot.Util.Util;
 import com.example.telegrambot.config.BotConfig;
 import com.itextpdf.text.Document;
@@ -14,15 +12,19 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
@@ -43,47 +45,60 @@ public class TelegramBot extends TelegramLongPollingBot {
         return config.getToken();
     }
 
+    private  void sendWithoutUrl(Message message){
+        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+        InlineKeyboardButton buttonS = new InlineKeyboardButton();
+        InlineKeyboardButton buttonY = new InlineKeyboardButton();
+
+        buttonS.setText("Sasha's activity");
+        buttonS.setCallbackData("startSasha");
+        buttonY.setText("Yura's activity");
+        buttonY.setCallbackData("startYura");
+
+        List<InlineKeyboardButton> buttons = new ArrayList<>();
+        buttons.add(buttonS);
+        buttons.add(buttonY);
+
+        List <List<InlineKeyboardButton>> rowList = new ArrayList<>();
+        rowList.add(buttons);
+
+        keyboard.setKeyboard(rowList);
+        try {
+            execute(
+                    SendMessage.builder()
+                            .chatId(message.getChatId())
+                            .parseMode("Markdown")
+                            .text("Options:")
+                            .replyMarkup(keyboard)
+                            .build());
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @SneakyThrows
     @Override
     public void onUpdateReceived(Update update) {
-        if (update.hasMessage() && update.getMessage().hasText()) {
-            String messageText = update.getMessage().getText();
-            long chatId = update.getMessage().getChatId();
+        if(update.hasMessage() && update.getMessage().hasText()){
 
-            switch (messageText) {
-                case "/start":
-                    startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
-                    break;
-                case "/data":
-                    sendDocument(chatId, "Users list", getFile());
-                    break;
-                default:
-                    sendMessage(chatId, "Sorry, not supported");
-                    break;
+            String messageText = update.getMessage().getText();
+            Message command = update.getMessage();
+
+            if ("/start".equals(messageText)) {
+                startAnswer(command);
+            } else {
+                defaultAnswer(command);
             }
         }
-
-    }
-
-    private void startCommandReceived(long chatId, String name) {
-
-        String answer = "Hi, " + name + ", nice to meet you!";
-
-        sendMessage(chatId, answer);
-
-    }
-
-    private void sendMessage(long chatId, String textToSend) {
-        SendMessage message = new SendMessage();
-        message.setChatId(String.valueOf(chatId));
-        message.setText(textToSend);
-
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-
+        else if (update.hasCallbackQuery()){
+            if (update.getCallbackQuery().getData().equals("startSasha")){
+                sendDocument(update.getCallbackQuery().getMessage().getChatId(), "Sasha's activities", createSashasPDF());
+            }else if(update.getCallbackQuery().getData().equals("startYura")){
+                sendDocument(update.getCallbackQuery().getMessage().getChatId(), "Yura's's activities", createYurasPDF());
+            }
         }
     }
+
 
     @SneakyThrows
     public void sendDocument(long chatId, String caption, InputFile sendfile) {
@@ -102,27 +117,27 @@ public class TelegramBot extends TelegramLongPollingBot {
         return inputFile;
     }
 
-    private static InputFile createPDF() throws FileNotFoundException, DocumentException, SQLException, ClassNotFoundException {
-        String fileName = "D:\\Java\\Andersen\\data.pdf";
+    private static InputFile createSashasPDF() throws FileNotFoundException, DocumentException, SQLException, ClassNotFoundException {
+        String fileName = "/home/sashakashinskaya/SashasData.pdf";
+                //"d:\\java\\andersen\\SashasData.pdf";
 
         Document document = new Document();
         PdfWriter.getInstance(document, new FileOutputStream(fileName));
         document.open();
 
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        String query = "SELECT * FROM users";
+        PreparedStatement ps;
+        ResultSet rs;
+        String query = "SELECT * FROM activities WHERE first_name = 'Sasha'";
         ps = Util.getConnection().prepareStatement(query);
         rs = ps.executeQuery();
 
-        document.add(new Paragraph("Users List"));
+        document.add(new Paragraph("Sasha's activity"));
         document.add(new Paragraph(" "));
 
         while (rs.next()) {
             Paragraph paragraph = new Paragraph(
-                    rs.getString("id") + " " +
-                            rs.getString("first_name") + " " +
-                            rs.getString("last_name") + " " +
+
+                    rs.getString("last_name") + " " +
                             rs.getString("age")
             );
             document.add(paragraph);
@@ -134,10 +149,59 @@ public class TelegramBot extends TelegramLongPollingBot {
         InputFile inputFile = new InputFile(file);
 
         return inputFile;
-
     }
 
-//    public static void main(String[] args) throws SQLException, DocumentException, FileNotFoundException, ClassNotFoundException {
-//        createPDF();
-//    }
+    private static InputFile createYurasPDF() throws FileNotFoundException, DocumentException, SQLException, ClassNotFoundException {
+        String fileName = "/home/sashakashinskaya/YurasData.pdf";
+                //"d:\\java\\andersen\\YurasData.pdf";
+
+        Document document = new Document();
+        PdfWriter.getInstance(document, new FileOutputStream(fileName));
+        document.open();
+
+        PreparedStatement ps;
+        ResultSet rs ;
+        String query = "SELECT * FROM activities WHERE first_name = 'Yura'";
+        ps = Util.getConnection().prepareStatement(query);
+        rs = ps.executeQuery();
+
+        document.add(new Paragraph("Yura's's activity"));
+        document.add(new Paragraph(" "));
+
+        while (rs.next()) {
+            Paragraph paragraph = new Paragraph(
+
+                    rs.getString("last_name") + " " +
+                            rs.getString("age")
+            );
+            document.add(paragraph);
+            document.add(new Paragraph(" "));
+        }
+
+        document.close();
+        File file = new File(fileName);
+        InputFile inputFile = new InputFile(file);
+
+        return inputFile;
+    }
+
+
+    private void startAnswer(Message command){
+        sendWithoutUrl(command);
+    }
+
+    private void defaultAnswer(Message command){
+        try {
+            execute(
+                    SendMessage.builder()
+                            .chatId(command.getChatId())
+                            .parseMode("Markdown")
+                            .text("Do not know such command!")
+                            .build());
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
+
+
