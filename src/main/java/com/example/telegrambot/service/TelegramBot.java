@@ -4,6 +4,9 @@ import com.example.telegrambot.config.BotConfig;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
@@ -125,9 +128,16 @@ public class TelegramBot extends TelegramLongPollingBot {
         PdfWriter.getInstance(document, new FileOutputStream(fileName));
         document.open();
 
+        PdfPTable table = new PdfPTable(2);
+        PdfPCell c1 = new PdfPCell(new Phrase("Activity"));
+        table.addCell(c1);
+        c1 = new PdfPCell(new Phrase("Duration (hour)"));
+        table.addCell(c1);
+        table.setHeaderRows(1);
+
         PreparedStatement ps;
         ResultSet rs;
-        String query = "SELECT * FROM activities WHERE first_name = 'Sasha'";
+        String query = "SELECT * FROM activities WHERE student_name = 'Sasha'";
         ps = Util.getConnection().prepareStatement(query);
         rs = ps.executeQuery();
 
@@ -135,15 +145,12 @@ public class TelegramBot extends TelegramLongPollingBot {
         document.add(new Paragraph(" "));
 
         while (rs.next()) {
-            Paragraph paragraph = new Paragraph(
 
-                    rs.getString("last_name") + " " +
-                            rs.getString("age")
-            );
-            document.add(paragraph);
-            document.add(new Paragraph(" "));
+                    table.addCell(rs.getString("activity_type"));
+                    table.addCell(rs.getString("prolongation"));
+
         }
-
+        document.add(table);
         document.close();
         File file = new File(fileName);
         InputFile inputFile = new InputFile(file);
@@ -151,33 +158,41 @@ public class TelegramBot extends TelegramLongPollingBot {
         return inputFile;
     }
 
+
+
+
     private static InputFile createYurasPDF() throws FileNotFoundException, DocumentException, SQLException, ClassNotFoundException {
         String fileName = //"/home/sashakashinskaya/YurasData.pdf";
-                "d:\\java\\andersen\\YurasData.pdf";
+                //"d:\\java\\andersen\\YurasData.pdf";
+                "assets/images";
 
         Document document = new Document();
         PdfWriter.getInstance(document, new FileOutputStream(fileName));
         document.open();
 
+        PdfPTable table = new PdfPTable(2);
+        PdfPCell c1 = new PdfPCell(new Phrase("Activity"));
+        table.addCell(c1);
+        c1 = new PdfPCell(new Phrase("Duration (hour)"));
+        table.addCell(c1);
+        table.setHeaderRows(1);
+
         PreparedStatement ps;
-        ResultSet rs ;
-        String query = "SELECT * FROM activities WHERE first_name = 'Yura'";
+        ResultSet rs;
+        String query = "SELECT * FROM activities WHERE student_name = 'Yury'";
         ps = Util.getConnection().prepareStatement(query);
         rs = ps.executeQuery();
 
-        document.add(new Paragraph("Yura's's activity"));
+        document.add(new Paragraph("Yury's activity"));
         document.add(new Paragraph(" "));
 
         while (rs.next()) {
-            Paragraph paragraph = new Paragraph(
 
-                    rs.getString("last_name") + " " +
-                            rs.getString("age")
-            );
-            document.add(paragraph);
-            document.add(new Paragraph(" "));
+            table.addCell(rs.getString("activity_type"));
+            table.addCell(rs.getString("prolongation"));
+
         }
-
+        document.add(table);
         document.close();
         File file = new File(fileName);
         InputFile inputFile = new InputFile(file);

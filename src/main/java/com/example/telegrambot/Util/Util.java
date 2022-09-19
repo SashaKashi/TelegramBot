@@ -9,7 +9,7 @@ public class Util {
     public static Connection getConnection() throws ClassNotFoundException, SQLException {
         Class.forName("org.postgresql.Driver");
 
-        Connection con = DriverManager.getConnection("jdbc:postgresql://35.195.218.82:5432/activity", "sasha",
+        Connection con = DriverManager.getConnection("jdbc:postgresql://35.195.218.82:5432/postgres", "sasha",
                                                                                                       "sasha");
         con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
