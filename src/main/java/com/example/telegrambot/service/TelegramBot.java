@@ -26,6 +26,9 @@ import java.io.FileOutputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,17 +140,19 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         PreparedStatement ps;
         ResultSet rs;
-        String query = "SELECT * FROM activities WHERE student_name = 'Sasha'";
-        ps = Util.getConnection().prepareStatement(query);
+        String query = "SELECT * FROM activities WHERE student_name = 'Sasha' and status = 'valid'";
+        ps = Util.getConnection().prepareStatement(query,ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_UPDATABLE);
         rs = ps.executeQuery();
 
-        document.add(new Paragraph("Sasha's activity"));
+        document.add(new Paragraph("Sasha's activity "+ LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yy"))));
         document.add(new Paragraph(" "));
 
         while (rs.next()) {
 
                     table.addCell(rs.getString("activity_type"));
                     table.addCell(rs.getString("prolongation"));
+                    rs.updateString("status","unvalid");
+                    rs.updateRow();
 
         }
         document.add(table);
@@ -163,8 +168,8 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private static InputFile createYurasPDF() throws FileNotFoundException, DocumentException, SQLException, ClassNotFoundException {
         String fileName = //"/home/sashakashinskaya/YurasData.pdf";
-                //"d:\\java\\andersen\\YurasData.pdf";
-                "assets/images";
+                "d:\\java\\andersen\\YurasData.pdf";
+
 
         Document document = new Document();
         PdfWriter.getInstance(document, new FileOutputStream(fileName));
@@ -179,17 +184,19 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         PreparedStatement ps;
         ResultSet rs;
-        String query = "SELECT * FROM activities WHERE student_name = 'Yury'";
-        ps = Util.getConnection().prepareStatement(query);
+        String query = "SELECT * FROM activities WHERE student_name = 'Yury' and status = 'valid'";
+        ps = Util.getConnection().prepareStatement(query,ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_UPDATABLE);
         rs = ps.executeQuery();
 
-        document.add(new Paragraph("Yury's activity"));
+        document.add(new Paragraph("Yury's activity " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yy"))));
         document.add(new Paragraph(" "));
 
         while (rs.next()) {
 
             table.addCell(rs.getString("activity_type"));
             table.addCell(rs.getString("prolongation"));
+            rs.updateString("status","unvalid");
+            rs.updateRow();
 
         }
         document.add(table);
